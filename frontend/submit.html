@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Submit Ticket</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <div class="nav">
+        <div>
+          <a href="tickets.html">Tickets</a>
+          <a href="submit.html">Submit</a>
+        </div>
+        <div>
+          <span id="user-badge" class="badge"></span>
+          <button class="btn secondary" id="logout-btn">Logout</button>
+        </div>
+      </div>
+
+      <section class="card">
+        <h1>New Ticket</h1>
+        <p class="muted">Capture your issue details. Attachments are stored in Cloudinary.</p>
+        <form id="ticket-form" enctype="multipart/form-data">
+          <div>
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" placeholder="Short summary" required />
+          </div>
+          <div>
+            <label for="category">Category</label>
+            <select id="category" name="category" required></select>
+          </div>
+          <div>
+            <label for="description">Description</label>
+            <textarea id="description" name="description" placeholder="Describe the issue" required></textarea>
+          </div>
+          <div>
+            <label for="attachment">Attachment (optional)</label>
+            <input type="file" id="attachment" name="attachment" accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" />
+          </div>
+          <button class="btn" type="submit">Submit Ticket</button>
+          <div id="form-message"></div>
+        </form>
+      </section>
+    </div>
+
+    <script type="module">
+      import { apiFetch, guardAuth, CATEGORIES, renderUserBadge } from "./js/app.js";
+
+      guardAuth();
+      renderUserBadge();
+
+      const categorySelect = document.getElementById("category");
+      CATEGORIES.forEach((option) => {
+        const opt = document.createElement("option");
+        opt.value = option;
+        opt.textContent = option;
+        categorySelect.appendChild(opt);
+      });
+
+      const form = document.getElementById("ticket-form");
+      const messageEl = document.getElementById("form-message");
+
+      const showMessage = (text, type = "error") => {
+        messageEl.textContent = text;
+        messageEl.className = `message ${type}`;
+      };
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        messageEl.textContent = "";
+
+        const formData = new FormData();
+        formData.append("title", document.getElementById("title").value.trim());
+        formData.append("category", categorySelect.value);
+        formData.append("description", document.getElementById("description").value.trim());
+        const attachment = document.getElementById("attachment").files[0];
+        if (attachment) {
+          formData.append("attachment", attachment);
+        }
+
+        try {
+          await apiFetch("/tickets", {
+            method: "POST",
+            body: formData,
+          });
+          form.reset();
+          showMessage("Ticket submitted successfully.", "success");
+        } catch (err) {
+          showMessage(err.message);
+        }
+      });
+    </script>
+    <script src="./js/chat.js"></script>
+  </body>
+</html>

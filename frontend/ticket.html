@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ticket Details</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <div class="nav">
+        <div>
+          <a href="tickets.html">Tickets</a>
+          <a href="submit.html">Submit</a>
+        </div>
+        <div>
+          <span id="user-badge" class="badge"></span>
+          <button class="btn secondary" id="logout-btn">Logout</button>
+        </div>
+      </div>
+
+      <section class="card" id="ticket-card">
+        <p class="muted">Loading ticket...</p>
+      </section>
+    </div>
+
+    <script type="module">
+      import {
+        apiFetch,
+        guardAuth,
+        STATUSES,
+        renderUserBadge,
+        formatDate,
+        getUser,
+        statusClass,
+      } from "./js/app.js";
+
+      guardAuth();
+      renderUserBadge();
+
+      const params = new URLSearchParams(window.location.search);
+      const ticketId = params.get("id");
+      const container = document.getElementById("ticket-card");
+      const user = getUser();
+
+      if (!ticketId) {
+        container.innerHTML = '<p class="message error">Ticket id is missing.</p>';
+      } else {
+        loadTicket();
+      }
+
+      function renderAttachment(attachmentUrl) {
+        if (!attachmentUrl) return "<p class='muted'>No attachment</p>";
+        const lower = attachmentUrl.toLowerCase();
+        if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".gif")) {
+          return `<div class="attachment-preview"><img src="${attachmentUrl}" alt="Attachment" /></div>`;
+        }
+        if (lower.endsWith(".pdf")) {
+          return `<div class="attachment-preview"><embed src="${attachmentUrl}" type="application/pdf" width="100%" height="400px" /></div>`;
+        }
+        return `<a href="${attachmentUrl}" target="_blank">Download attachment</a>`;
+      }
+
+      async function loadTicket() {
+        try {
+          const ticket = await apiFetch(`/tickets/${ticketId}`);
+          container.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h1>${ticket.title}</h1>
+              <span class="status ${statusClass(ticket.status)}">${ticket.status}</span>
+            </div>
+            <p class="muted">${ticket.category}</p>
+            <p>${ticket.description}</p>
+            <p class="muted">By ${ticket.createdBy} • ${formatDate(ticket.createdAt)}</p>
+            <h3>Attachment</h3>
+            ${renderAttachment(ticket.attachment_url)}
+            ${user?.is_staff ? renderAdminControls(ticket.status) : ""}
+            <div id="detail-message"></div>
+            <a class="btn secondary" href="tickets.html" style="margin-top:12px;display:inline-block;">Back to list</a>
+          `;
+          bindStatusUpdate();
+        } catch (err) {
+          container.innerHTML = `<p class="message error">${err.message}</p>`;
+        }
+      }
+
+      function renderAdminControls(currentStatus) {
+        const options = STATUSES.map(
+          (status) =>
+            `<option value="${status}" ${status === currentStatus ? "selected" : ""}>${status}</option>`
+        ).join("");
+        return `
+          <div class="card" style="margin-top:16px;">
+            <h3>Update Status (Admin)</h3>
+            <div class="controls">
+              <select id="status-select">${options}</select>
+              <button class="btn" id="update-status">Save</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function bindStatusUpdate() {
+        const button = document.getElementById("update-status");
+        if (!button) return;
+        const messageEl = document.getElementById("detail-message");
+        button.addEventListener("click", async () => {
+          const newStatus = document.getElementById("status-select").value;
+          messageEl.textContent = "";
+          try {
+            await apiFetch(`/tickets/${ticketId}/status`, {
+              method: "PATCH",
+              body: { status: newStatus },
+            });
+            messageEl.textContent = "Status updated.";
+            messageEl.className = "message success";
+            loadTicket();
+          } catch (err) {
+            messageEl.textContent = err.message;
+            messageEl.className = "message error";
+          }
+        });
+      }
+    </script>
+    <script src="./js/chat.js"></script>
+  </body>
+</html>

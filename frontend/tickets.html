@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tickets</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <div class="nav">
+        <div>
+          <a href="tickets.html">Tickets</a>
+          <a href="submit.html">Submit</a>
+        </div>
+        <div>
+          <span id="user-badge" class="badge"></span>
+          <button class="btn secondary" id="logout-btn">Logout</button>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="nav" style="margin-bottom: 12px">
+          <h1>Ticket List</h1>
+          <a class="btn secondary" href="submit.html">New Ticket</a>
+        </div>
+        <div class="controls">
+          <input type="text" id="search" placeholder="Search title or username" />
+          <select id="filter-category">
+            <option value="">All Categories</option>
+          </select>
+          <select id="filter-status">
+            <option value="">All Statuses</option>
+          </select>
+          <button class="btn" id="apply-filters">Apply</button>
+          <button class="btn secondary" id="reset-filters">Reset</button>
+        </div>
+        <div id="tickets-container"></div>
+        <div class="pagination">
+          <button class="btn secondary" id="prev-page">Previous</button>
+          <span id="page-info" class="muted"></span>
+          <button class="btn secondary" id="next-page">Next</button>
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      import {
+        apiFetch,
+        guardAuth,
+        CATEGORIES,
+        STATUSES,
+        renderUserBadge,
+        formatDate,
+        statusClass,
+      } from "./js/app.js";
+
+      guardAuth();
+      renderUserBadge();
+
+      const categorySelect = document.getElementById("filter-category");
+      const statusSelect = document.getElementById("filter-status");
+      const searchInput = document.getElementById("search");
+      const ticketsContainer = document.getElementById("tickets-container");
+      const pageInfo = document.getElementById("page-info");
+      const prevBtn = document.getElementById("prev-page");
+      const nextBtn = document.getElementById("next-page");
+
+      CATEGORIES.forEach((cat) => {
+        const opt = document.createElement("option");
+        opt.value = cat;
+        opt.textContent = cat;
+        categorySelect.appendChild(opt);
+      });
+
+      STATUSES.forEach((status) => {
+        const opt = document.createElement("option");
+        opt.value = status;
+        opt.textContent = status;
+        statusSelect.appendChild(opt);
+      });
+
+      let currentPage = 1;
+      let lastCount = 0;
+
+      const renderTickets = (tickets) => {
+        if (!tickets.length) {
+          ticketsContainer.innerHTML = '<p class="muted">No tickets found.</p>';
+          return;
+        }
+        ticketsContainer.innerHTML = `
+          <div class="grid">
+            ${tickets
+              .map(
+                (ticket) => `
+                <div class="card">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <h3>${ticket.title}</h3>
+                    <span class="status ${statusClass(ticket.status)}">${ticket.status}</span>
+                  </div>
+                  <p class="muted">${ticket.category}</p>
+                  <p>${ticket.description.substring(0, 140)}${ticket.description.length > 140 ? "..." : ""}</p>
+                  <p class="muted">By ${ticket.createdBy} • ${formatDate(ticket.createdAt)}</p>
+                  <a class="btn secondary" href="ticket.html?id=${ticket.id}">View Details</a>
+                </div>
+              `
+              )
+              .join("")}
+          </div>
+        `;
+      };
+
+      const loadTickets = async (page = 1) => {
+        const params = new URLSearchParams();
+        if (searchInput.value.trim()) params.append("search", searchInput.value.trim());
+        if (categorySelect.value) params.append("category", categorySelect.value);
+        if (statusSelect.value) params.append("status", statusSelect.value);
+        params.append("page", page);
+
+        try {
+          const data = await apiFetch(`/tickets?${params.toString()}`);
+          renderTickets(data.results || data);
+          currentPage = page;
+          lastCount = data.count || (data.results ? data.results.length : 0);
+          const totalPages = data.count ? Math.ceil(data.count / 10) : 1;
+          pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+          prevBtn.disabled = !data.previous;
+          nextBtn.disabled = !data.next;
+        } catch (err) {
+          ticketsContainer.innerHTML = `<p class="message error">${err.message}</p>`;
+        }
+      };
+
+      document.getElementById("apply-filters").addEventListener("click", () => loadTickets(1));
+      document.getElementById("reset-filters").addEventListener("click", () => {
+        searchInput.value = "";
+        categorySelect.value = "";
+        statusSelect.value = "";
+        loadTickets(1);
+      });
+
+      prevBtn.addEventListener("click", () => {
+        if (currentPage > 1) loadTickets(currentPage - 1);
+      });
+      nextBtn.addEventListener("click", () => loadTickets(currentPage + 1));
+
+      loadTickets();
+    </script>
+    <script src="./js/chat.js"></script>
+  </body>
+</html>

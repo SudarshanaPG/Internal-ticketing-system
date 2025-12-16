@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ticketing System - Login</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <div class="nav">
+        <div>
+          <a href="index.html">Login</a>
+          <a href="submit.html">Submit Ticket</a>
+          <a href="tickets.html">Tickets</a>
+        </div>
+        <span class="badge">Internal Ticketing</span>
+      </div>
+
+      <div class="grid">
+        <section class="card">
+          <h1>Sign In</h1>
+          <p class="muted">
+            Use your Django auth credentials. Admins can review and update statuses; users can submit and track their own tickets.
+          </p>
+          <form id="login-form">
+            <div>
+              <label for="username">Username</label>
+              <input type="text" id="username" name="username" required />
+            </div>
+            <div>
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" required />
+            </div>
+            <button class="btn" type="submit">Login</button>
+            <div id="login-message"></div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>How it works</h2>
+          <ul>
+            <li>Submit new tickets with an optional attachment.</li>
+            <li>Filter and search tickets by title, category, and status.</li>
+            <li>Admins can update ticket statuses.</li>
+            <li>Tawk.to widget sits on every page for quick help.</li>
+          </ul>
+          <p class="muted">
+            After login you will be redirected to the ticket list. Keep your JWT stored locally; use the Logout button to clear it.
+          </p>
+        </section>
+      </div>
+    </div>
+
+    <script type="module">
+      import { apiFetch, setTokens, setUser } from "./js/app.js";
+
+      const form = document.getElementById("login-form");
+      const messageEl = document.getElementById("login-message");
+
+      const showMessage = (text, type = "error") => {
+        messageEl.textContent = text;
+        messageEl.className = `message ${type}`;
+      };
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        messageEl.textContent = "";
+        try {
+          const username = document.getElementById("username").value.trim();
+          const password = document.getElementById("password").value.trim();
+          const data = await apiFetch("/auth/login", {
+            method: "POST",
+            body: { username, password },
+          });
+          setTokens(data.access, data.refresh);
+          setUser(data.user);
+          showMessage("Logged in! Redirecting…", "success");
+          setTimeout(() => (window.location.href = "tickets.html"), 800);
+        } catch (err) {
+          showMessage(err.message);
+        }
+      });
+    </script>
+    <script src="./js/chat.js"></script>
+  </body>
+</html>
