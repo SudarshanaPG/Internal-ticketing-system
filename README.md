@@ -116,4 +116,12 @@ curl -X PATCH http://localhost:8000/api/tickets/1/status ^
 - Chat: Tawk widget visible on every page after property id is set.
 
 ## Live Demo
-Not provided; run locally with the instructions above.
+Frontend (Netlify): `https://neon-babka-907659.netlify.app/`
+
+Backend (Render):
+- API: `https://internal-ticketing-system-qoyb.onrender.com/api/`
+- Admin: `https://internal-ticketing-system-qoyb.onrender.com/admin/`
+
+Notes:
+- The Render free tier may “sleep”, so the first request can take ~30–60 seconds.
+- The backend root URL `/` will show 404 by design (only `/api/` and `/admin/` exist).
