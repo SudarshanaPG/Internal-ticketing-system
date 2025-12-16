@@ -1,5 +1,7 @@
-export const API_BASE_URL =
-  localStorage.getItem("API_BASE_URL") || "http://localhost:8000/api";
+const DEFAULT_API_BASE_URL =
+  (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "http://localhost:8000/api";
+
+export const API_BASE_URL = localStorage.getItem("API_BASE_URL") || DEFAULT_API_BASE_URL;
 
 export const CATEGORIES = ["Technical", "Financial", "Product"];
 export const STATUSES = ["New", "Under Review", "Resolved"];
