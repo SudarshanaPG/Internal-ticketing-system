@@ -123,5 +123,6 @@ Backend (Render):
 - Admin: `https://internal-ticketing-system-qoyb.onrender.com/admin/`
 
 Notes:
-- The Render free tier may “sleep”, so the first request can take ~30–60 seconds.
+- The Render free tier may "sleep", so the first request can take ~30-60 seconds.
 - The backend root URL `/` will show 404 by design (only `/api/` and `/admin/` exist).
+- Demo credentials are provided in the submission / available on request (do not publish passwords in the repo).
